@@ -1,6 +1,7 @@
 mod config;
 
 use anyhow::{Error, Result};
+use futures::future;
 // use inotify::{Inotify, WatchMask};
 use std::fs::File;
 use std::io::prelude::*;
@@ -36,9 +37,16 @@ async fn main() -> Result<()> {
     let config = read_config_file()?;
     let cancellation_token = CancellationToken::new();
 
-    for command in config.run {
-        service_manager::start_service(&command, cancellation_token.clone()).await?;
+    let mut futures = vec![];
+
+    for command in &config.run {
+        futures.push(service_manager::start_service(
+            command,
+            cancellation_token.clone(),
+        ));
     }
+
+    future::join_all(futures).await;
 
     Ok(())
 }
