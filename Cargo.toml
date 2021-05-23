@@ -8,7 +8,11 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.40"
+futures = "0.3.15"
 inotify = "0.9.3"
 serde = { version = "1.0.126", features = ["derive"] }
 serde_yaml = "0.8.17"
+subprocess = "0.2.7"
+tokio = { version = "1.6.0", features = ["full"] }
+tokio-util = "0.6.7"
 xdg = "2.2.0"

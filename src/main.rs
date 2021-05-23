@@ -2,9 +2,12 @@ mod config;
 
 use anyhow::{Error, Result};
 // use inotify::{Inotify, WatchMask};
+use std::fs::File;
 use std::io::prelude::*;
-use std::{collections::HashMap, fs::File};
 use std::{fs, io::ErrorKind};
+use tokio_util::sync::CancellationToken;
+
+mod service_manager;
 
 fn read_config_file() -> Result<config::Config> {
     let xdg_dirs = xdg::BaseDirectories::new()?;
@@ -26,21 +29,16 @@ fn read_config_file() -> Result<config::Config> {
     Ok(config)
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     println!("wumpusd initializing");
 
     let config = read_config_file()?;
-    let mut processes: HashMap<&str, i32> = HashMap::new();
+    let cancellation_token = CancellationToken::new();
 
-    for command in &config.run {
-        processes.insert(command, 0);
+    for command in config.run {
+        service_manager::start_service(&command, cancellation_token.clone()).await?;
     }
-
-    println!("{:?}", read_config_file()?);
-    // let mut inotify = Inotify::init().expect("Error while initializing inotify system");
-
-    // // Watch config file
-    // inotify.add_watch(config_path, WatchMask::MODIFY | WatchMask::CLOSE)?;
 
     Ok(())
 }
