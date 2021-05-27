@@ -2,6 +2,7 @@ mod config;
 
 use anyhow::{Error, Result};
 use futures::future;
+use futures::future::FusedFuture;
 use futures::select;
 use futures::FutureExt;
 use futures::StreamExt;
@@ -64,6 +65,8 @@ async fn main() -> Result<()> {
 
     loop {
         let config = read_config_file()?;
+
+        // Add new services
         for command in &config.run {
             if !services.contains_key(command) {
                 let cancellation_token = CancellationToken::new();
@@ -71,22 +74,28 @@ async fn main() -> Result<()> {
                     command.clone(),
                     (
                         service_manager::start_service(command.clone(), cancellation_token.clone())
-                            .boxed(),
+                            .boxed()
+                            .fuse(),
                         cancellation_token,
                     ),
                 );
             }
         }
 
+        // Cancel services that are no longer wanted
         for (cmd, (_, cancellation_token)) in &mut services {
             if !config.run.contains(cmd) {
                 cancellation_token.cancel();
             }
         }
 
+        // Clear out dead futures from the services list
+        services.retain(|_k, v| !v.0.is_terminated());
+
         select! {
             _ = future::join_all(services.values_mut().map(|(future, _)| future)).fuse() => {
-                panic!();
+                println!("All services have stopped / no services listed; exiting");
+                return Ok(());
             }
             _ = wait_for_config_change().fuse() => {
                 println!("Config file changed; reloading");

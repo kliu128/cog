@@ -35,7 +35,8 @@ mod test {
     #[tokio::test]
     async fn cancellation_works() -> Result<()> {
         let token = CancellationToken::new();
-        let future = crate::service_manager::start_service("sleep infinity", token.clone());
+        let future =
+            crate::service_manager::start_service("sleep infinity".to_string(), token.clone());
 
         tokio::spawn(async move {
             tokio::time::sleep(std::time::Duration::from_millis(10)).await;
@@ -43,7 +44,7 @@ mod test {
         });
 
         // This will hang infinitely if cancellation fails
-        future.await?;
+        future.await;
 
         Ok(())
     }
