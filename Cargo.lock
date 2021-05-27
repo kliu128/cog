@@ -389,16 +389,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
 
 [[package]]
-name = "subprocess"
-version = "0.2.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "334b801f9ca2529ba9605109f1d2835f15aff94cd6cfe5afe6ce8cf71e5fd3c4"
-dependencies = [
- "libc",
- "winapi",
-]
-
-[[package]]
 name = "syn"
 version = "1.0.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -491,7 +481,6 @@ dependencies = [
  "inotify",
  "serde",
  "serde_yaml",
- "subprocess",
  "tokio",
  "tokio-util",
  "xdg",

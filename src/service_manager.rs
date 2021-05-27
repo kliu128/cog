@@ -1,26 +1,25 @@
 use std::time::Duration;
 
-use anyhow::Result;
 use futures::future::FutureExt;
 use futures::select;
-use tokio::process::{Child, Command};
+use tokio::process::Command;
 use tokio_util::sync::CancellationToken;
 
 /// Starts a process and will automatically auto-restart it until the
 /// cancellation token is activated, at which point it will kill the chidl.
-pub async fn start_service(cmd: &str, cancellation_token: CancellationToken) -> Result<Child> {
+pub async fn start_service(cmd: String, cancellation_token: CancellationToken) {
     loop {
         println!("Starting shell command: {}", cmd);
-        let mut process = Command::new("sh").args(&["-c", cmd]).spawn()?;
+        let mut process = Command::new("sh").args(&["-c", &cmd]).spawn().unwrap();
 
         select! {
             _ = cancellation_token.cancelled().fuse() => {
                 println!("Shutting down command {}", cmd);
-                process.kill().await?;
-                return Ok(process);
+                process.kill().await.unwrap();
+                break;
             }
             status = process.wait().fuse() => {
-                let status = status?;
+                let status = status.unwrap();
                 println!("Process exited with code {}; restarting in 1 s", status);
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
