@@ -3,6 +3,14 @@ name = "wumpusd"
 version = "0.1.0"
 authors = ["Kevin Liu <kevin@kliu.io>"]
 edition = "2018"
+default-run = "wumpusd"
+
+[[bin]]
+name = "wumpusd"
+
+[[bin]]
+name = "wumpus"
+path = "src/client.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
