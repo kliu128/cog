@@ -34,12 +34,13 @@ pub async fn start_service(cmd: String, cancellation_token: CancellationToken) {
     }
 }
 
-pub async fn start_service_manager() -> Result<()> {
+pub async fn start_service_manager(cancellation_token: CancellationToken) -> Result<()> {
     let mut services = HashMap::new();
+    let mut config = config::read_config_file()?;
+
+    let mut cancelled_future = cancellation_token.cancelled().boxed().fuse();
 
     loop {
-        let config = config::read_config_file()?;
-
         // Add new services
         for command in &config.run {
             if !services.contains_key(command) {
@@ -56,8 +57,8 @@ pub async fn start_service_manager() -> Result<()> {
             }
         }
 
-        // Cancel services that are no longger wanted
-        for (cmd, (_, cancellation_token)) in &mut services {
+        // Cancel services that are no longer wanted
+        for (cmd, (_, cancellation_token)) in services.iter_mut() {
             if !config.run.contains(cmd) {
                 cancellation_token.cancel();
             }
@@ -66,13 +67,24 @@ pub async fn start_service_manager() -> Result<()> {
         // Clear out dead futures from the services list
         services.retain(|_k, v| !v.0.is_terminated());
 
+        let values = services.values_mut();
+        let mut futures = future::join_all(values.map(|(future, _)| future)).fuse();
+
         select! {
-            _ = future::join_all(services.values_mut().map(|(future, _)| future)).fuse() => {
+            _ = futures => {
                 println!("All services have stopped / no services listed; exiting");
                 return Ok(());
             }
             _ = config::wait_for_config_change().fuse() => {
                 println!("Config file changed; reloading");
+
+                config = config::read_config_file()?;
+            }
+            _ = cancelled_future => {
+                println!("Cancelled; shutting down");
+
+                config.run.clear();
+                // The next loop will shut down all services
             }
         }
     }
