@@ -3,6 +3,7 @@ use anyhow::Result;
 use futures::StreamExt;
 use inotify::{Inotify, WatchMask};
 use serde::{Deserialize, Serialize};
+use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use std::{fs, io::ErrorKind};
@@ -13,6 +14,11 @@ pub struct Config {
 }
 
 pub fn get_config_file() -> Result<String> {
+    // Allow environment variable to override xdg config location
+    if let Ok(path) = env::var("COGD_CONFIG_FILE") {
+        return Ok(path);
+    }
+
     let xdg_dirs = xdg::BaseDirectories::new()?;
     let config_path = xdg_dirs.get_config_home().join("cogd.yml");
     Ok(String::from(config_path.to_string_lossy()))
