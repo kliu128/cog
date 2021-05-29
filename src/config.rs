@@ -14,7 +14,7 @@ pub struct Config {
 
 pub fn get_config_file() -> Result<String> {
     let xdg_dirs = xdg::BaseDirectories::new()?;
-    let config_path = xdg_dirs.get_config_home().join("wumpusd.yml");
+    let config_path = xdg_dirs.get_config_home().join("cogd.yml");
     Ok(String::from(config_path.to_string_lossy()))
 }
 

@@ -7,7 +7,7 @@ use futures::{select, FutureExt};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("wumpusd initializing");
+    println!("cogd initializing");
 
     select! {
         r = service_manager::start_service_manager().fuse() => r,
