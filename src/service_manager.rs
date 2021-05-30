@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -7,10 +8,12 @@ use futures::future::FutureExt;
 use futures::select;
 use std::collections::HashMap;
 use tokio::process::Command;
+use tokio::sync::Mutex;
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 
 use crate::config;
+use crate::service_statuses::ServiceStatuses;
 
 /// Starts a process and will automatically auto-restart it until the
 /// cancellation token is activated, at which point it will kill the chidl.
@@ -34,7 +37,10 @@ pub async fn start_service(cmd: String, cancellation_token: CancellationToken) {
     }
 }
 
-pub async fn start_service_manager(cancellation_token: CancellationToken) -> Result<()> {
+pub async fn start_service_manager(
+    cancellation_token: CancellationToken,
+    service_statuses: Arc<Mutex<ServiceStatuses>>,
+) -> Result<()> {
     let mut services = HashMap::new();
     let mut config = config::read_config_file()?;
 
@@ -54,6 +60,7 @@ pub async fn start_service_manager(cancellation_token: CancellationToken) -> Res
                         cancellation_token,
                     ),
                 );
+                service_statuses.lock().await.names.insert(command.clone());
             }
         }
 
@@ -61,6 +68,7 @@ pub async fn start_service_manager(cancellation_token: CancellationToken) -> Res
         for (cmd, (_, cancellation_token)) in services.iter_mut() {
             if !config.run.contains(cmd) {
                 cancellation_token.cancel();
+                service_statuses.lock().await.names.remove(cmd);
             }
         }
 
