@@ -3,12 +3,13 @@ use std::{io::Read, os::unix::net::UnixStream};
 use anyhow::Result;
 use console::style;
 
+mod server;
 mod service_statuses;
 
 use crate::service_statuses::ServiceStatuses;
 
 fn main() -> Result<()> {
-    let mut stream = UnixStream::connect("./socket")?;
+    let mut stream = UnixStream::connect(server::get_socket_path())?;
     let mut response = String::new();
     stream.read_to_string(&mut response)?;
     let status: ServiceStatuses = serde_json::from_str(&response)?;

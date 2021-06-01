@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -7,12 +8,18 @@ use tokio::{io::AsyncWriteExt, net::UnixListener};
 
 use crate::service_statuses::ServiceStatuses;
 
-const SOCKET_PATH: &str = "./socket";
+pub fn get_socket_path() -> PathBuf {
+    let runtime_dir =
+        std::env::var("XDG_RUNTIME_DIR").expect("XDG_RUNTIME_DIR not set; cannot create socket");
+    return PathBuf::from(runtime_dir).join("cogd-ctl");
+}
 
+#[allow(dead_code)]
 pub async fn start_status_server(service_statuses: Arc<Mutex<ServiceStatuses>>) -> Result<()> {
     // Unlink the socket in case it already exists
-    let _ = fs::remove_file(SOCKET_PATH).await;
-    let listener = UnixListener::bind(SOCKET_PATH)?;
+    let socket_path = get_socket_path();
+    let _ = fs::remove_file(&socket_path).await;
+    let listener = UnixListener::bind(&socket_path)?;
 
     loop {
         match listener.accept().await {
