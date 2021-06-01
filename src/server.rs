@@ -18,6 +18,8 @@ pub fn get_socket_path() -> PathBuf {
 pub async fn start_status_server(service_statuses: Arc<Mutex<ServiceStatuses>>) -> Result<()> {
     // Unlink the socket in case it already exists
     let socket_path = get_socket_path();
+    // Ignore error since we can't really do anything about it, and we expect
+    // an error if the file doesn't exist (which is fine)
     let _ = fs::remove_file(&socket_path).await;
     let listener = UnixListener::bind(&socket_path)?;
 
