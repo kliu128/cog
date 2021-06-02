@@ -16,20 +16,26 @@ use crate::config;
 use crate::service_statuses::ServiceStatuses;
 
 /// Starts a process and will automatically auto-restart it until the
-/// cancellation token is activated, at which point it will kill the chidl.
+/// cancellation token is activated, at which point it will kill the child.
+///
+/// Returns a future, which will only stop if the cancellation token is
+/// triggered. This function may panic if system calls fail.
 pub async fn start_service(cmd: String, cancellation_token: CancellationToken) {
     loop {
         println!("Starting shell command: {}", cmd);
-        let mut process = Command::new("sh").args(&["-c", &cmd]).spawn().unwrap();
+        let mut process = Command::new("sh")
+            .args(&["-c", &cmd])
+            .spawn()
+            .expect("Failed to spawn child process");
 
         select! {
             _ = cancellation_token.cancelled().fuse() => {
                 println!("Shutting down command {}", cmd);
-                process.kill().await.unwrap();
+                process.kill().await.expect("Failed to send kill message to process");
                 break;
             }
             status = process.wait().fuse() => {
-                let status = status.unwrap();
+                let status = status.expect("Failed to get child status");
                 println!("Process exited with code {}; restarting in 1 s", status);
                 sleep(Duration::from_secs(1)).await;
             }
@@ -37,6 +43,9 @@ pub async fn start_service(cmd: String, cancellation_token: CancellationToken) {
     }
 }
 
+/// Starts a background service that watches for config file changes and runs
+/// all services specified in the config file. If cancellation_token is
+/// triggered, shuts down the service.
 pub async fn start_service_manager(
     cancellation_token: CancellationToken,
     service_statuses: Arc<Mutex<ServiceStatuses>>,

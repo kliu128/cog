@@ -8,13 +8,16 @@ use tokio::{io::AsyncWriteExt, net::UnixListener};
 
 use crate::service_statuses::ServiceStatuses;
 
+/// Returns the socket path of the cogd controller.
 pub fn get_socket_path() -> PathBuf {
     let runtime_dir =
         std::env::var("XDG_RUNTIME_DIR").expect("XDG_RUNTIME_DIR not set; cannot create socket");
     return PathBuf::from(runtime_dir).join("cogd-ctl");
 }
 
-#[allow(dead_code)]
+/// Runs a status server on a Unix socket that broadcasts a list of all running
+/// services.
+#[allow(dead_code)] // required because client.rs also imports this file
 pub async fn start_status_server(service_statuses: Arc<Mutex<ServiceStatuses>>) -> Result<()> {
     // Unlink the socket in case it already exists
     let socket_path = get_socket_path();

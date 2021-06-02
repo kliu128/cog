@@ -16,6 +16,7 @@ fn main() -> Result<()> {
         .about("cogd controller")
         .get_matches();
 
+    // Connect to the server socket and deserialize the status
     let mut stream = UnixStream::connect(server::get_socket_path())?;
     let mut response = String::new();
     stream.read_to_string(&mut response)?;
