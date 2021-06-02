@@ -19,3 +19,8 @@ Services under management by cogd:
 - [ RUNNING ] sleep infinity
 ...
 ```
+
+## Possible additions
+
+- cgroup management, a la systemd
+- A more featureful `cog` tool (currently all it can do is list processes)
